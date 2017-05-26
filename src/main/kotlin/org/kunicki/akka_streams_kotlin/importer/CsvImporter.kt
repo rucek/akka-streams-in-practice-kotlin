@@ -3,6 +3,7 @@ package org.kunicki.akka_streams_kotlin.importer
 import akka.Done
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
 import akka.stream.javadsl.*
 import akka.util.ByteString
 import com.typesafe.config.Config
@@ -76,4 +77,22 @@ class CsvImporter(config: Config,
             Flow.create<File>()
                     .via(parseFile)
                     .via(computeAverage)
+
+    fun importFromFiles(): CompletionStage<Done> {
+        val files = importDirectory.listFiles().toList()
+        logger.info("Starting import of {} files from {}", files.size, importDirectory.path)
+
+        val startTime = System.currentTimeMillis()
+
+        return Source.from(files)
+                .via(processSingleFile)
+                .runWith(storeReadings, ActorMaterializer.create(system))
+                .whenComplete { d, e ->
+                    if (d != null) {
+                        logger.info("Import finished in {}s", (System.currentTimeMillis() - startTime) / 1000.0)
+                    } else {
+                        logger.error("Import failed", e)
+                    }
+                }
+    }
 }
