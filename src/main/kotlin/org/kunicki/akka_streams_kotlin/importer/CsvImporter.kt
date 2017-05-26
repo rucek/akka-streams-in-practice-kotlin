@@ -11,6 +11,7 @@ import org.kunicki.akka_streams_kotlin.model.InvalidReading
 import org.kunicki.akka_streams_kotlin.model.Reading
 import org.kunicki.akka_streams_kotlin.model.ValidReading
 import org.kunicki.akka_streams_kotlin.repository.ReadingRepository
+import org.kunicki.akka_streams_kotlin.util.Balancer
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileInputStream
@@ -84,8 +85,10 @@ class CsvImporter(config: Config,
 
         val startTime = System.currentTimeMillis()
 
+        val balancer = Balancer.create(concurrentFiles, processSingleFile)
+
         return Source.from(files)
-                .via(processSingleFile)
+                .via(balancer)
                 .runWith(storeReadings, ActorMaterializer.create(system))
                 .whenComplete { d, e ->
                     if (d != null) {
