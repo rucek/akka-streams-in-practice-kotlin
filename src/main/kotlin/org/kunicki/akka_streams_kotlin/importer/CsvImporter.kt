@@ -1,11 +1,9 @@
 package org.kunicki.akka_streams_kotlin.importer
 
+import akka.Done
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.javadsl.Flow
-import akka.stream.javadsl.Framing
-import akka.stream.javadsl.FramingTruncation
-import akka.stream.javadsl.StreamConverters
+import akka.stream.javadsl.*
 import akka.util.ByteString
 import com.typesafe.config.Config
 import org.kunicki.akka_streams_kotlin.model.InvalidReading
@@ -68,4 +66,9 @@ class CsvImporter(config: Config,
                     ValidReading(readings.first().id, average)
                 }
             })
+
+    val storeReadings: Sink<ValidReading, CompletionStage<Done>> =
+            Flow.create<ValidReading>()
+                    .mapAsyncUnordered(concurrentWrites, readingRepository::save)
+                    .toMat(Sink.ignore(), Keep.right())
 }
