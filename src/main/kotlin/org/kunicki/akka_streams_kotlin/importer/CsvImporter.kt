@@ -71,4 +71,9 @@ class CsvImporter(config: Config,
             Flow.create<ValidReading>()
                     .mapAsyncUnordered(concurrentWrites, readingRepository::save)
                     .toMat(Sink.ignore(), Keep.right())
+
+    val processSingleFile: Flow<File, ValidReading, NotUsed> =
+            Flow.create<File>()
+                    .via(parseFile)
+                    .via(computeAverage)
 }
