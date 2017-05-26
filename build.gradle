@@ -1,0 +1,34 @@
+buildscript {
+    ext.kotlin_version = '1.1.2-2'
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+apply plugin: 'kotlin'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
+    compile 'com.typesafe.akka:akka-stream_2.11:2.5.1'
+    compile 'com.datastax.cassandra:cassandra-driver-core:3.2.0'
+    compile 'io.vavr:vavr:0.9.0'
+    compile 'ch.qos.logback:logback-classic:1.2.3'
+    compile 'net.javacrumbs.future-converter:future-converter-java8-guava:1.1.0'
+}
+
+task generateRandomData(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'org.kunicki.akka_streams_kotlin.RandomDataGeneratorKt'
+}
+
+task runImport(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'org.kunicki.akka_streams_kotlin.importer.CsvImporterKt'
+}
