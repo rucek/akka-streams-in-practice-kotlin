@@ -7,6 +7,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.javadsl.*
 import akka.util.ByteString
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import org.kunicki.akka_streams_kotlin.model.InvalidReading
 import org.kunicki.akka_streams_kotlin.model.Reading
 import org.kunicki.akka_streams_kotlin.model.ValidReading
@@ -98,4 +99,14 @@ class CsvImporter(config: Config,
                     }
                 }
     }
+}
+
+fun main(args: Array<String>) {
+    val config = ConfigFactory.load()
+    val readingRepository = ReadingRepository()
+    val system = ActorSystem.create()
+
+    CsvImporter(config, readingRepository, system).importFromFiles()
+            .thenAccept { _ -> readingRepository.shutdown() }
+            .thenAccept { _ -> system.terminate() }
 }
