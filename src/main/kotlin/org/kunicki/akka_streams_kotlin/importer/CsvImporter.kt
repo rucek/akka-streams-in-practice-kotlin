@@ -5,6 +5,7 @@ import akka.actor.ActorSystem
 import akka.stream.javadsl.Flow
 import akka.stream.javadsl.Framing
 import akka.stream.javadsl.FramingTruncation
+import akka.stream.javadsl.StreamConverters
 import akka.util.ByteString
 import com.typesafe.config.Config
 import org.kunicki.akka_streams_kotlin.model.InvalidReading
@@ -12,9 +13,12 @@ import org.kunicki.akka_streams_kotlin.model.Reading
 import org.kunicki.akka_streams_kotlin.model.ValidReading
 import org.kunicki.akka_streams_kotlin.repository.ReadingRepository
 import org.slf4j.LoggerFactory
+import java.io.File
+import java.io.FileInputStream
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
+import java.util.zip.GZIPInputStream
 
 class CsvImporter(config: Config,
                   readingRepository: ReadingRepository,
@@ -45,4 +49,14 @@ class CsvImporter(config: Config,
 
     val lineDelimiter: Flow<ByteString, ByteString, NotUsed> =
             Framing.delimiter(ByteString.fromString("\n"), 128, FramingTruncation.ALLOW)
+
+    val parseFile: Flow<File, Reading, NotUsed> =
+            Flow.create<File>().flatMapConcat { file ->
+                val inputStream = GZIPInputStream(FileInputStream(file))
+                StreamConverters.fromInputStream { inputStream }
+                        .via(lineDelimiter)
+                        .drop(linesToSkip)
+                        .map { it.utf8String() }
+                        .mapAsync(nonIOParallelism, this::parseLine)
+            }
 }
